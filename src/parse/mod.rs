@@ -52,11 +52,11 @@ fn string_parser(input: State<&str>) -> ParseResult<String, &str> {
 }
 
 fn boolean_parser(input : State<&str>) -> ParseResult<Object, &str> {
-    unimplemented!()
+    string("TRUE").map(|_| Object::Boolean(true)).or(string("FALSE").map(|_| Object::Boolean(false))).parse_state(input)
 }
 
 fn wierd_exception(input : State<&str>) -> ParseResult<Object, &str> {
-    unimplemented!()
+    string("$$").with(many1(letter())).map(|string : String| Object::RandomText(string)).parse_state(input)
 }
 
 fn single_object_parser(input : State<&str>) -> ParseResult<Object, &str> {
@@ -92,18 +92,20 @@ pub fn sections_parser(input: State<&str>) -> ParseResult<Object, &str> {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
+    use std::fmt::Debug;
     use super::combine::*;
     use super::{Object};
     use super::{assignment_parser, boolean_parser, object_parser, section_parser, sections_parser, single_object_parser, string_parser, struct_parser, title_parser, wierd_exception};
 
     const true_object : Object = Object::Boolean(true);
 
-    fn test<A: Eq, F: Fn(State<&str>) -> ParseResult<A, &str>>(my_parser : F, input : &str, output : A) {
+    fn test<A: Eq + Debug, F: Fn(State<&str>) -> ParseResult<A, &str>>(my_parser : F, input : &str, output : A) {
         let result = parser(my_parser).parse(input);
+        assert!(result.is_ok());
         match result {
             Ok((result, rest)) => {
-                assert!(result == output);
-                assert!(rest == "");
+                assert_eq!(result, output);
+                assert_eq!(rest, "");
             },
             _                  => assert!(false)
         }
@@ -121,20 +123,20 @@ mod tests {
 
     #[test]
     fn test_boolean_parser() {
-        test(boolean_parser, "true", true_object);
+        test(boolean_parser, "TRUE", true_object);
     }
 
     #[test]
     fn test_wierd_exception_parser() {
         let wierd_object : Object = Object::RandomText("wierd".to_string());
-        test(wierd_exception, "$$string", wierd_object);
+        test(wierd_exception, "$$wierd", wierd_object);
     }
 
     #[test]
     fn test_single_object_parser() {
         let wierd_object : Object = Object::RandomText("wierd".to_string());
         test(single_object_parser, "123", Object::IntObject(123));
-        test(single_object_parser, "true", true_object);
+        test(single_object_parser, "TRUE", true_object);
         test(single_object_parser, "\"string\"", Object::String("string".to_string()));
         test(single_object_parser, "$$wierd", wierd_object);
     }
@@ -145,7 +147,7 @@ mod tests {
             , "{col1, col2
                1, 2
                \"hello\", \"world\"
-               true, false
+               TRUE, FALSE
                }"
             , ( vec!("col1".to_string(), "col2".to_string())
               , vec!(vec!(Object::IntObject(1), Object::IntObject(2)),
@@ -179,7 +181,7 @@ mod tests {
              "[test]
               test1 = 1
               test2 = \"hello world\"
-              test3 = true",
+              test3 = TRUE",
              ("test".to_string(), hash_map));
     }
 }
