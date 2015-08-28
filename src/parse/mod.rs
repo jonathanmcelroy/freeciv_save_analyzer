@@ -73,12 +73,11 @@ fn struct_parser(input: State<&str>) -> ParseResult<(Vec<String>, Vec<Vec<Object
     title_parser.and(row_parser).parse_state(input)
 }
 
-
-fn objectParser(input : State<&str>) -> ParseResult<Object, &str> {
+fn object_parser(input : State<&str>) -> ParseResult<Object, &str> {
     unimplemented!()
 }
 
-fn assignmentParser(input : State<&str>) -> ParseResult<(String, Object), &str> {
+fn assignment_parser(input : State<&str>) -> ParseResult<(String, Object), &str> {
     unimplemented!()
 }
 
@@ -92,9 +91,10 @@ pub fn sections_parser(input: State<&str>) -> ParseResult<Object, &str> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use super::combine::*;
     use super::{Object};
-    use super::{boolean_parser, sections_parser, single_object_parser, string_parser, struct_parser, title_parser, wierd_exception};
+    use super::{assignment_parser, boolean_parser, object_parser, section_parser, sections_parser, single_object_parser, string_parser, struct_parser, title_parser, wierd_exception};
 
     const true_object : Object = Object::Boolean(true);
 
@@ -157,6 +157,29 @@ mod tests {
 
     #[test]
     fn test_object_parser() {
+        test(object_parser,
+             "1, 2, 3",
+             Object::VecObject(vec!(Object::IntObject(1), Object::IntObject(2), Object::IntObject(3))));
+    }
 
+    #[test]
+    fn test_assignment_parser() {
+        test(assignment_parser,
+             "test = 1",
+             ("test".to_string(), Object::IntObject(1)));
+    }
+
+    #[test]
+    fn test_section_parser() {
+        let mut hash_map = HashMap::new();
+        hash_map.insert("test1".to_string(), Object::IntObject(1));
+        hash_map.insert("test2".to_string(), Object::String("hello world".to_string()));
+        hash_map.insert("test3".to_string(), true_object);
+        test(section_parser,
+             "[test]
+              test1 = 1
+              test2 = \"hello world\"
+              test3 = true",
+             ("test".to_string(), hash_map));
     }
 }
